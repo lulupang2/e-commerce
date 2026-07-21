@@ -75,6 +75,103 @@ services:
     networks:
       - infra-net
 
+  # ----------------------------------------------------------
+  # search-rec — 시맨틱 검색 + 추천 HTTP 서비스 (:3001)
+  # ----------------------------------------------------------
+  search-rec:
+    build:
+      context: .
+      dockerfile: apps/search-rec/Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME:-portfolio}-search-rec
+    restart: unless-stopped
+    ports:
+      - "${SEARCH_REC_HOST_BIND:-127.0.0.1}:${SEARCH_REC_PORT:-3001}:3001"
+    environment:
+      PORT: "3001"
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    security_opt:
+      - label=disable
+    networks:
+      - infra-net
+
+  # ----------------------------------------------------------
+  # ai-gen — Redis Stream consumer + 가드레일 (:3002 /health)
+  # ----------------------------------------------------------
+  ai-gen:
+    build:
+      context: .
+      dockerfile: apps/ai-gen/Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME:-portfolio}-ai-gen
+    restart: unless-stopped
+    ports:
+      - "${AI_GEN_HOST_BIND:-127.0.0.1}:${AI_GEN_PORT:-3002}:3002"
+    environment:
+      PORT: "3002"
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      GEN_BASE_URL: ${GEN_BASE_URL:-}
+      GEN_API_KEY: ${GEN_API_KEY:-}
+      GEN_MODEL: ${GEN_MODEL:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3002/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    security_opt:
+      - label=disable
+    networks:
+      - infra-net
+
+  # ----------------------------------------------------------
+  # api — BFF 게이트웨이 (:3000) — search-rec 를 서비스명으로 호출
+  # ----------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME:-portfolio}-api
+    restart: unless-stopped
+    ports:
+      - "${API_HOST_BIND:-127.0.0.1}:${API_PORT:-3000}:3000"
+    environment:
+      PORT: "3000"
+      SEARCH_REC_URL: http://search-rec:3001
+    depends_on:
+      search-rec:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    security_opt:
+      - label=disable
+    networks:
+      - infra-net
+
 volumes:
   pg_data:
     name: ${COMPOSE_PROJECT_NAME:-portfolio}_pg_data

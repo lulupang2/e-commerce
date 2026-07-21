@@ -2,40 +2,44 @@
 
 ## 진행 상태
 
-- [x] `/api/recommend/home` 200 확인
-- [x] `/api/search` 200 확인
-- [x] `/api/recommend/related` 200 확인
-- [ ] `/api/recommend/invalidate-home` 미검증
-- [ ] `getUserProfile()` 콜드스타트 TODO (항상 null → popularity만)
+- [x] STEP 1~4: R 증거4종 / 결정론 / 캐시+무효화 / 콜드스타트 (search-rec)
+- [x] ADR-0003 설계 → modules/ai-gen 구현 → 가드레일·멱등 검증
+- [x] ADR-0004 저장 + `verified_at` 컬럼 (가드레일 정직 기록)
+- [x] ADR-0005 설계 → **MSA 1단계 분리 완료** (modules/* → apps/*)
+- [ ] apps/api 이벤트 producer (상품생성/리뷰누적 시 XADD) — 후속 과제
+- [ ] getUserProfile() 콜드스타트 TODO (R, B와 독립)
+- [ ] Docker 이미지 빌드 미검증 — WSL Docker Hub 인증 오류 (로컬 node 이미지 부재, pull 불가). Dockerfile은 로컬 3프로세스 런타임 검증과 동일 명령(`pnpm --filter ... start`) 사용으로 대체 검증
 
-## 이번 세션 변경사항
+## MSA 분리 (이번 세션)
 
-### 1. `@swc/core` 의존성 추가 (pnpm-workspace root)
-- **이유**: `tsx` 기본 엔진인 esbuild가 `experimentalDecorators` / `emitDecoratorMetadata` 미지원
-- tsx는 `@swc/core`가 있으면 자동으로 SWC 사용
-- `.swcrc` 파일 추가 (decoratorMetadata, legacyDecorator 설정)
+### 구조 변경
+```
+modules/search-rec → apps/search-rec   (@search/search-rec-app, :3001)
+modules/ai-gen     → apps/ai-gen       (@ai/ai-gen-app,       :3002 /health)
+apps/api           → BFF 프록시로 전환   (:3000, 도메인 import 0)
+```
 
-### 2. 컨트롤러 `@Inject()` 명시
-- `modules/search-rec/src/search.controller.ts:8` — `@Inject(SearchService)` 추가
-- `modules/search-rec/src/recommend/recommend.controller.ts:16-17` — `@Inject(RecommendService)`, `@Inject(RecommendCacheService)` 추가
-- **이유**: `emitDecoratorMetadata` 미방출 환경에서 NestJS DI가 생성자 파라미터 타입을 추론하지 못 함
+### 신규 파일
+- `apps/search-rec/src/main.ts`, `src/app.module.ts` (HealthController — pg/redis ping)
+- `apps/ai-gen/src/main.ts`, `src/app.module.ts` (HealthController — pg/redis/consumer 생존)
+- `apps/api/src/search-rec-proxy.controller.ts` (HTTP 프록시, 10s 타임아웃, 502 폼백)
+- `apps/api/src/health.controller.ts` (search-rec /health 경유 확인)
+- `apps/{api,search-rec,ai-gen}/Dockerfile` (워크스페이스 루트 컨텍스트)
+- `docker-compose.yml`에 search-rec/ai-gen/api 서비스 추가 (서비스명 통신, healthcheck, depends_on: service_healthy)
 
-### 3. `ProductVectorRepository.mapRow()` 타입 변환
-- `modules/search-rec/src/product-vector.repository.ts:34-54` — private `mapRow()` 추가
-- node-postgres가 bigint→string, timestamp→Date로 반환하는 것을 Zod 스키마 기대 타입(number, ISO string)으로 변환
-- `semanticSearch()`, `trgmSearch()`, `getProductsByIds()` 세 메서드 모두 `mapRow` 경유
+### 코드 변경
+- `StreamConsumer.isRunning()` 공개 (health용)
+- `apps/api/package.json`: `@search/search-rec`, `@ai/gen` 의존 제거
+- 직접 import 검사: `grep -rn "from '@search/\|from '@ai/" apps/api/src/` → 0건
 
-### 4. `PopularityRepository` bigint→number 변환
-- `modules/search-rec/src/recommend/popularity.repository.ts:28-29` — `getScores()`: `Number(row.product_id)` 추가
-- 동일 파일 `getTopPopular()`: `Number(r.product_id)` 추가
-- Map key가 string으로 설정되어 Number lookup 실패 → popularity 항상 0 버그
+### 검증 (로컬 3프로세스)
+- health 3종: `{:3001,:3002,:3000/api}/health` 모두 `status:ok`
+- R 프록시: `/api/search`, `/api/recommend/home`, `/api/recommend/invalidate-home` → 200/201
+- B 플로우: XADD → ai-gen 소비 → `status=published, verified_at=SET`
+- `pnpm exec tsc --noEmit` → 0 errors
+- `docker compose config` → 유효, 서비스 5개
 
-### 5. Redis 캐시 플러시
-- 이전 실행에서 잘못된 형식의 응답이 캐시되어 500 반복 → `FLUSHALL`로 해결
-
-## 주의사항
-
-- `tsx` CLI 사용 시 반드시 `@swc/core` 설치 필요 (없으면 `experimentalDecorators` 오류)
-- `pnpm approve-builds @swc/core` 실행 후 `pnpm i` 필요
-- 서버는 `pnpm exec tsx apps/api/src/main.ts` 로 실행 (3000번)
-- 컨트롤러에 `@Inject()` 필수 — 향후 새 컨트롤러 추가 시 동일 패턴 적용
+### 주의사항
+- 컨테이너 간 통신은 서비스명(`postgres`, `redis`, `search-rec`) — localhost 금지
+- ai-gen health의 consumer 상태는 폴 루프 플래그 기준 (NOGROUP 자동 복구 로직 포함)
+- search-rec는 글로벌 프픽스 없음(낙부 서비스), api만 `/api` 프픽스 → 프록시 경로 매핑 주의

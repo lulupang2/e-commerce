@@ -38,3 +38,16 @@ export {
   type HomeRecommendQuery,
   type RelatedRecommendQuery,
 } from './schemas/recommend';
+
+export {
+  GeneratedContentSchema,
+  BANNED_WORDS,
+  GeneratedContentStatus,
+  GeneratedContentType,
+  generatedContentValidatedField,
+  GeneratedContentDbSchema,
+  ContentStatusChangedEventSchema,
+  type GeneratedContent,
+  type GeneratedContentDb,
+  type ContentStatusChangedEvent,
+} from './schemas/generated-content';
