@@ -1,0 +1,61 @@
+services:
+  - type: web
+    name: api
+    env: docker
+    region: singapore
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerBuildArgs:
+      - key: SERVICE
+        value: api
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: "3000"
+      - key: SEARCH_REC_URL
+        fromService:
+          type: web
+          name: search-rec
+          property: hostport
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+
+  - type: web
+    name: search-rec
+    env: docker
+    region: singapore
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerBuildArgs:
+      - key: SERVICE
+        value: search-rec
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "3001"
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+
+  - type: worker
+    name: ai-gen
+    env: docker
+    region: singapore
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerBuildArgs:
+      - key: SERVICE
+        value: ai-gen
+    envVars:
+      - key: PORT
+        value: "3002"
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
