@@ -10,17 +10,16 @@ const pgPool = new Pool({
     process.env['DATABASE_URL'] ?? 'postgresql://portfolio:change-me@localhost:5432/portfolio',
 });
 
-const redis = new Redis(
-  process.env['REDIS_URL'] ?? 'redis://localhost:6379',
-  {
-    maxRetriesPerRequest: null,
-    retryStrategy(times) {
-      if (times > 10) return null;
-      return Math.min(times * 200, 2000);
-    },
-    lazyConnect: true,
+const redisUrl = process.env['REDIS_URL'] ?? 'redis://localhost:6379';
+const redis = new Redis(redisUrl, {
+  maxRetriesPerRequest: null,
+  retryStrategy(times) {
+    if (times > 10) return null;
+    return Math.min(times * 200, 2000);
   },
-);
+  lazyConnect: true,
+  tls: redisUrl.startsWith('rediss://') ? {} : redisUrl.includes('upstash.io') ? {} : undefined,
+});
 
 @Controller()
 export class HealthController {
