@@ -40,13 +40,14 @@ services:
       - key: REDIS_URL
         sync: false
 
-  - type: worker
+  - type: web
     name: ai-gen
     env: docker
     region: singapore
     plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
+    healthCheckPath: /health
     envVars:
       - key: SERVICE
         value: ai-gen
