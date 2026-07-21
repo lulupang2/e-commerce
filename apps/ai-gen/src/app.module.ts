@@ -10,11 +10,17 @@ const pgPool = new Pool({
     process.env['DATABASE_URL'] ?? 'postgresql://portfolio:change-me@localhost:5432/portfolio',
 });
 
-const redis = new Redis({
-  host: process.env['REDIS_HOST'] ?? 'localhost',
-  port: process.env['REDIS_PORT'] ? Number(process.env['REDIS_PORT']) : 6379,
-  password: process.env['REDIS_PASSWORD'] ?? 'change-me',
-});
+const redis = new Redis(
+  process.env['REDIS_URL'] ?? 'redis://localhost:6379',
+  {
+    maxRetriesPerRequest: null,
+    retryStrategy(times) {
+      if (times > 10) return null;
+      return Math.min(times * 200, 2000);
+    },
+    lazyConnect: true,
+  },
+);
 
 @Controller()
 export class HealthController {
