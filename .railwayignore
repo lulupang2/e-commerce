@@ -1,0 +1,17 @@
+# .railwayignore
+node_modules
+**/node_modules
+.next
+**/.next
+dist
+**/dist
+.turbo
+**/.turbo
+coverage
+**/coverage
+*.log
+.env
+.env.*
+!.env.example
+infra/
+docs/

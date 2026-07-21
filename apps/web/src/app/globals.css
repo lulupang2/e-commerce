@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-light bg-bg text-gray-900 leading-relaxed;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-card shadow-card p-6 flex flex-col gap-2;
+  }
+  .pill {
+    @apply inline-block px-2.5 py-0.5 rounded-full text-white text-xs font-normal;
+  }
+  .pill-accent {
+    background: linear-gradient(135deg, #635BFF, #7A73FF);
+  }
+  .pill-terracotta {
+    @apply bg-[#D97757];
+  }
+  .pill-yellow {
+    @apply bg-[#F5A623];
+  }
+}

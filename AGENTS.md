@@ -21,7 +21,7 @@ pnpm workspace monorepo. Postgres + pgvector + Redis(Stream) infra, NestJS 서�
 
 - **R(검색/추천) = 동기 HTTP**: apps/api는 search-rec를 `SEARCH_REC_URL`로 HTTP 호출(프록시). 직접 import 0.
 - **B(생성) = 비동기 이벤트**: ai-gen은 Redis Stream(`ai:events`) consumer. producer는 현재 seed 스크립트(apps/api producer는 후속 과제).
-- 추출 기준표·나머지 도메인(product/order)을 안 뺀 근거는 `docs/decisions/adr-0005-msa-extraction.md` 참조.
+- 추출 기준표·나머지 도메인(product/order)을 안 뺀 근거는 `docs/decisions/adr-0005-modular-monolith-to-msa.md` 참조.
 
 ## 필수 명령어
 
@@ -183,3 +183,4 @@ GET  http://localhost:3002/health    # ai-gen (pg/redis/consumer 생존)
 ## 콜드스타트 참고
 
 `RecommendService.getUserProfile()`은 무조건 `null` 반환(TODO). 따라서 `/recommend/home`은 **항상 콜드스타트 경로(popularity만)** 로 동작하며, 사용자 프로필 서비스 연동 전까지 affinity 신호는 동작 안 함. 콜드스타트 경로는 임의 UUID로 테스트 가능.
+- **UI/프론트 작업 시 `DESIGN.md`를 먼저 읽어 스타일을 따를 것.**

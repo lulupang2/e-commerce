@@ -51,3 +51,10 @@ export {
   type GeneratedContentDb,
   type ContentStatusChangedEvent,
 } from './schemas/generated-content';
+
+export {
+  SearchResultItemSchema,
+  SearchResponseSchema,
+  type SearchResultItem,
+  type SearchResponse,
+} from './schemas/search';
