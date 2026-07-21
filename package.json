@@ -1,0 +1,16 @@
+{
+  "name": "portfolio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "e커머스 MSA 모노레포 루트 — 모든 서비스 패키지의 통합 빌드/타입 설정",
+  "devDependencies": {
+    "@types/pg": "^8.20.0",
+    "tsx": "^4.23.1",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@swc/core": "^1.15.46",
+    "@swc/helpers": "^0.5.23",
+    "ts-node": "^10.9.2"
+  }
+}

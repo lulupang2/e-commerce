@@ -1,0 +1,9 @@
+packages:
+  - 'packages/*'
+  - 'modules/*'
+  - 'apps/*'
+
+allowBuilds:
+  '@nestjs/core': true
+  '@swc/core': true
+  esbuild: true

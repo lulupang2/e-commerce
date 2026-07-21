@@ -1,0 +1,22 @@
+{
+  "name": "@search/search-rec",
+  "version": "0.1.0",
+  "private": true,
+  "description": "e커머스 의미론 검색 모듈 — pgvector cosine + pg_trgm fallback + Redis cache",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "seed": "tsx seed/seed.ts"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.4.0",
+    "@shared/schemas": "workspace:*",
+    "ioredis": "^5.4.0",
+    "pg": "^8.12.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.0",
+    "tsx": "^4.16.0"
+  }
+}

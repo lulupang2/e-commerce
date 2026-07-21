@@ -1,0 +1,26 @@
+// 이 설정의 책임: 모노레포 공통 TypeScript 구성 + @shared/* 경로 별칭 (tsconfig-paths/tsx 로 런타임 해석)
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@shared/schemas": ["packages/shared/src/index.ts"],
+      "@shared/*": ["packages/shared/src/*"]
+    }
+  },
+  "include": ["packages/**/*.ts", "modules/**/*.ts", "apps/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

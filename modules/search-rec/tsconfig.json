@@ -1,0 +1,8 @@
+// 이 설정의 책임: NestJS search-rec 모듈 컴파일 — root tsconfig 상속
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*.ts", "seed/**/*.ts"]
+}

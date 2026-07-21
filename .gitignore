@@ -1,0 +1,14 @@
+# 로컬 개발환경 시크릿 — 커밋 금지
+.env
+.env.*
+!.env.example
+
+# 호스트에서 만들어질 수 있는 산출물
+*.log
+.DS_Store
+.idea/
+.vscode/
+
+# Node
+node_modules/
+dist/
