@@ -9,7 +9,10 @@ const pgPool = new Pool({
     process.env['DATABASE_URL'] ?? 'postgresql://portfolio:change-me@localhost:5432/portfolio',
 });
 
-const redisUrl = process.env['REDIS_URL'] ?? 'redis://localhost:6379';
+const rawRedisUrl = process.env['REDIS_URL'] ?? 'redis://localhost:6379';
+const redisUrl = rawRedisUrl.startsWith('redis://') && rawRedisUrl.includes('upstash.io')
+  ? rawRedisUrl.replace('redis://', 'rediss://')
+  : rawRedisUrl;
 const redis = new Redis(redisUrl, {
   maxRetriesPerRequest: null,
   retryStrategy(times) {
@@ -17,7 +20,6 @@ const redis = new Redis(redisUrl, {
     return Math.min(times * 200, 2000);
   },
   lazyConnect: true,
-  tls: redisUrl.startsWith('rediss://') ? {} : redisUrl.includes('upstash.io') ? {} : undefined,
 });
 
 @Controller()
