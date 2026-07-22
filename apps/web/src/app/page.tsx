@@ -9,22 +9,15 @@ export default async function HomePage() {
   const userId = '550e8400-e29b-41d4-a716-446655440000';
   let items: React.ReactNode[] = [];
   let source = '';
-  let errorMsg = '';
 
   try {
     const data = await getRecommendHome(userId, 12);
     source = data.source;
     items = data.items.map((item) => <RecommendCard key={item.id} item={item} />);
-  } catch (err) {
-    errorMsg = (err as Error).message;
-  }
-
-  if (errorMsg) {
+  } catch {
     return (
-      <div className="text-center py-12 font-light text-muted space-y-2">
-        <p>추천을 불러올 수 없습니다</p>
-        <p className="text-xs font-mono bg-gray-100 p-2 rounded">SEARCH_REC_URL={process.env['SEARCH_REC_URL'] ?? '(not set)'}</p>
-        <p className="text-xs font-mono">error: {errorMsg}</p>
+      <div className="text-center py-12 font-light text-muted">
+        추천을 불러올 수 없습니다. search-rec 서비스가 실행 중인지 확인하세요.
       </div>
     );
   }
