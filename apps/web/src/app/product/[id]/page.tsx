@@ -1,39 +1,42 @@
 import { getRecommendRelated } from '@/lib/api';
 import { RecommendCard } from '@/components/RecommendCard';
 import { GeneratedDescription, NoAIDescription } from '@/components/GeneratedDescription';
-import { Pool } from 'pg';
 
-// 가드레일: rejected·draft·needs_human_review 설명은 절대 렌더링하지 않음
-// (status='published' 필터만으로도 rejected는 제외되지만, needs_human_review 명시로 의도를 코드에 표현)
-
-const DATABASE_URL = process.env['DATABASE_URL'];
-if (!DATABASE_URL) throw new Error('DATABASE_URL is required (.env.local)');
-
-// Next.js dev HMR 대응 — 모듈 재평가 시 Pool 재생성으로 커넥션 누수 방지
-const globalForPg = globalThis as unknown as { pgPool?: Pool };
-const pgPool = globalForPg.pgPool ?? (globalForPg.pgPool = new Pool({ connectionString: DATABASE_URL }));
+export const dynamic = 'force-dynamic';
 
 async function fetchPublishedDescription(productId: string): Promise<{ title?: string; body: string } | null> {
-  const sql = /* sql */ `
-    SELECT validated
-    FROM generated_contents
-    WHERE aggregate_id = $1
-      AND content_type = 'description'
-      AND status = 'published'
-      AND verified_at IS NOT NULL
-      AND needs_human_review = FALSE
-    ORDER BY created_at DESC
-    LIMIT 1
-  `;
-  const result = await pgPool.query<{ validated: Record<string, unknown> }>(sql, [productId]);
-  const validated = result.rows[0]?.validated;
-  if (validated && typeof validated['body'] === 'string') {
-    return {
-      title: typeof validated['title'] === 'string' ? validated['title'] : undefined,
-      body: validated['body'] as string,
-    };
+  const dbUrl = process.env['DATABASE_URL'];
+  if (!dbUrl) return null;
+
+  // dynamic import — pg는 서버에서만 import 가능
+  const { Pool } = await import('pg');
+  const pgPool = new Pool({ connectionString: dbUrl });
+
+  try {
+    const sql = /* sql */ `
+      SELECT validated
+      FROM generated_contents
+      WHERE aggregate_id = $1
+        AND content_type = 'description'
+        AND status = 'published'
+        AND verified_at IS NOT NULL
+        AND needs_human_review = FALSE
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+    const result = await pgPool.query<{ validated: Record<string, unknown> }>(sql, [productId]);
+    await pgPool.end();
+    const validated = result.rows[0]?.validated;
+    if (validated && typeof validated['body'] === 'string') {
+      return {
+        title: typeof validated['title'] === 'string' ? validated['title'] : undefined,
+        body: validated['body'] as string,
+      };
+    }
+    return null;
+  } catch {
+    return null;
   }
-  return null;
 }
 
 export default async function ProductPage({ params }: { params: { id: string } }) {
