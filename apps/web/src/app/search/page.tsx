@@ -3,6 +3,8 @@ import { SearchBar } from '@/components/SearchBar';
 import { RecommendCard } from '@/components/RecommendCard';
 import { FallbackBadge } from '@/components/FallbackBadge';
 
+export const dynamic = 'force-dynamic';
+
 export default async function SearchPage({ searchParams }: { searchParams: { q?: string } }) {
   const query = searchParams.q ?? '';
   let items: React.ReactNode[] = [];
