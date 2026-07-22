@@ -15,7 +15,7 @@ function getBase(): string {
 // MSA 응답 맹신 금지 — safeParse 실패 시 throw (페이지의 try/catch가 폼백 UI 렌더링)
 // z.output<S>: .default()/.preprocess() 로 input≠output 인 스키마의 출력 타입을 정확히 추론
 async function fetchJSON<S extends ZodTypeAny>(url: string, schema: S): Promise<z.output<S>> {
-  const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+  const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
   if (!res.ok) throw new Error(`upstream ${res.status}: ${res.statusText}`);
   const parsed = schema.safeParse(await res.json());
   if (!parsed.success) {

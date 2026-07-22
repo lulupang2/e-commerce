@@ -2,5 +2,10 @@
   "buildCommand": "pnpm --filter @portfolio/web build",
   "installCommand": "pnpm install --frozen-lockfile",
   "outputDirectory": ".next",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "functions": {
+    "**/*": {
+      "maxDuration": 60
+    }
+  }
 }
