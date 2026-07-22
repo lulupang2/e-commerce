@@ -97,6 +97,10 @@ export class ProductVectorRepository {
   // ---- pg_trgm 키워드 폴백 ---------------------------------------------------
 
   async trgmSearch(query: string, topK: number): Promise<SemanticSearchRow[]> {
+    // pg_trgm 임계값을 한글 짧은 검색어에 맞춰 낮춤 (기본 0.3 → 0.1)
+    await this.pool.query('SET LOCAL pg_trgm.similarity_threshold = 0.1');
+
+    // ILIKE 폴백 포함: pg_trgm % 연산자가 한글 짧은 검색어를 놓칠 때 대비
     const sql = /* sql */ `
       SELECT id, uuid, sku, name, description,
              price::float8              AS "price",
@@ -104,10 +108,16 @@ export class ProductVectorRepository {
              metadata,
              created_at                 AS "createdAt",
              updated_at                 AS "updatedAt",
-             similarity(COALESCE(name, '') || ' ' || COALESCE(description, ''), $1) AS similarity
+             GREATEST(
+               similarity(COALESCE(name, '') || ' ' || COALESCE(description, ''), $1),
+               CASE WHEN (COALESCE(name, '') || ' ' || COALESCE(description, '')) ILIKE '%' || $1 || '%' THEN 0.5 ELSE 0 END
+             ) AS similarity
       FROM products
       WHERE status = 'ACTIVE'
-        AND (COALESCE(name, '') || ' ' || COALESCE(description, '')) % $1
+        AND (
+          (COALESCE(name, '') || ' ' || COALESCE(description, '')) % $1
+          OR (COALESCE(name, '') || ' ' || COALESCE(description, '')) ILIKE '%' || $1 || '%'
+        )
       ORDER BY similarity DESC
       LIMIT $2
     `;
