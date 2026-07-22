@@ -3,6 +3,7 @@ import { RecommendCard } from '@/components/RecommendCard';
 import { GeneratedDescription, NoAIDescription } from '@/components/GeneratedDescription';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 async function fetchPublishedDescription(productId: string): Promise<{ title?: string; body: string } | null> {
   const dbUrl = process.env['DATABASE_URL'];

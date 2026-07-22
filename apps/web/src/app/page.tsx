@@ -3,6 +3,7 @@ import { RecommendCard } from '@/components/RecommendCard';
 import { ColdStartBadge } from '@/components/ColdStartBadge';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 export default async function HomePage() {
   const userId = '550e8400-e29b-41d4-a716-446655440000';
