@@ -43,19 +43,31 @@ export class StreamConsumer implements OnModuleDestroy {
 
   async start(): Promise<void> {
     this.running = true;
-    try {
-      await this.redis.xgroup('CREATE', STREAM_KEY, CONSUMER_GROUP, '0', 'MKSTREAM');
-      this.logger.log(`Consumer group "${CONSUMER_GROUP}" ready on stream "${STREAM_KEY}"`);
-    } catch (err) {
-      const msg = (err as Error).message;
-      if (msg.includes('BUSYGROUP')) {
-        this.logger.log(`Consumer group "${CONSUMER_GROUP}" already exists`);
-      } else {
-        this.logger.error(`Failed to create consumer group: ${msg}`);
-        throw err;
+    await this.tryCreateGroup();
+    this.poll();
+  }
+
+  private async tryCreateGroup(retries = 10, delayMs = 3000): Promise<void> {
+    for (let i = 0; i < retries; i++) {
+      try {
+        await this.redis.xgroup('CREATE', STREAM_KEY, CONSUMER_GROUP, '0', 'MKSTREAM');
+        this.logger.log(`Consumer group "${CONSUMER_GROUP}" ready on stream "${STREAM_KEY}"`);
+        return;
+      } catch (err) {
+        const msg = (err as Error).message;
+        if (msg.includes('BUSYGROUP')) {
+          this.logger.log(`Consumer group "${CONSUMER_GROUP}" already exists`);
+          return;
+        }
+        if (i < retries - 1) {
+          this.logger.warn(`Redis unavailable (attempt ${i + 1}/${retries}), retrying in ${delayMs}ms...`);
+          await new Promise((r) => setTimeout(r, delayMs));
+        } else {
+          this.logger.error(`Failed to create consumer group after ${retries} attempts: ${msg}`);
+          throw err;
+        }
       }
     }
-    this.poll();
   }
 
   private poll(): void {
